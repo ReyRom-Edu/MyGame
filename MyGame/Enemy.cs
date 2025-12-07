@@ -2,6 +2,7 @@
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace MyGame
@@ -31,8 +32,16 @@ namespace MyGame
 
             Position += target * Speed * dt;
 
-            center = this.Position + new Vector2(texture.Width / 2, texture.Height / 2);
-            radius = texture.Width / 2;
+            UpdateHitbox();
+        }
+
+        private void UpdateHitbox()
+        {
+            // Вычисляем центр спрайта
+            center = Position + new Vector2(texture.Width / 2, texture.Height / 2) * 0.1f;
+
+            // Используем половину меньшей стороны для радиуса (или половину ширины для круглого врага)
+            radius = Math.Min(texture.Width, texture.Height) / 2f * 0.1f;
         }
 
         Vector2 center;
@@ -40,44 +49,72 @@ namespace MyGame
 
         public bool LaserHitsEnemy(Laser laser)
         {
-            center = this.Position + new Vector2(texture.Width/2, texture.Height/2);
-            radius = texture.Width/2;
+            // Алгоритм пересечения отрезка (лазера) и круга (хитбокса врага)
+            Vector2 laserStartToCenter = center - laser.Start;
+            Vector2 laserDirection = laser.End - laser.Start;
 
-            Vector2 dir = laser.End - laser.Start;
-            float t = Vector2.Dot(center - laser.End, dir) / Vector2.Dot(dir,dir);
+            // Длина лазера
+            float laserLengthSquared = laserDirection.LengthSquared();
+
+            // Если лазер нулевой длины, проверяем расстояние от начала до центра
+            if (laserLengthSquared == 0)
+            {
+                return Vector2.Distance(laser.Start, center) <= radius;
+            }
+
+            // Проекция вектора от начала лазера к центру на направление лазера
+            float t = Vector2.Dot(laserStartToCenter, laserDirection) / laserLengthSquared;
+
+            // Ограничиваем t в пределах отрезка лазера
             t = MathHelper.Clamp(t, 0f, 1f);
 
-            Vector2 closest = laser.Start + dir * t;
+            // Находим ближайшую точку на отрезке лазера к центру врага
+            Vector2 closestPoint = laser.Start + laserDirection * t;
 
-            float dist = Vector2.Distance(closest, center);
+            // Расстояние от ближайшей точки до центра врага
+            float distance = Vector2.Distance(closestPoint, center);
 
-            return dist <= radius;
+            // Проверяем, пересекается ли с радиусом
+            return distance <= radius;
         }
 
-        public void Draw(SpriteBatch sb)
+        public void Draw(SpriteBatch spriteBatch)
         {
-            sb.Draw(
-               texture,
-               Position,
-               null,
-               Color.White,
-               0,
-               new Vector2(texture.Width / 2, texture.Height / 2),
-               0.1f,
-               SpriteEffects.None,
-               0);
-
-            sb.Draw(
-                GetPixel(sb.GraphicsDevice),
+            // Рисуем врага
+            spriteBatch.Draw(
+                texture,
                 Position,
                 null,
-                Color.Aquamarine,
-                0,
-                Vector2.Zero,
-                new Vector2(radius, radius),
+                Color.White,
+                0f,
+                Vector2.Zero, // Используем левый верхний угол как точку отсчета
+                0.1f, // Масштаб 1:1
                 SpriteEffects.None,
-                0);
+                0f);
         }
+
+        public void DrawHitbox(SpriteBatch spriteBatch)
+        {
+            Texture2D pixel = GetPixel(spriteBatch.GraphicsDevice);
+
+            // Рисуем круг хитбокса (квадрат для простоты отладки)
+            // Для точного круга нужно было бы использовать примитивы или специальную текстуру
+            Vector2 hitboxPosition = center - new Vector2(radius, radius);
+            Vector2 hitboxSize = new Vector2(radius * 2, radius * 2);
+
+            // Рисуем прозрачный красный квадрат для хитбокса
+            spriteBatch.Draw(
+                pixel,
+                hitboxPosition,
+                null,
+                Color.Red * 0.5f, // Полупрозрачный красный
+                0f,
+                Vector2.Zero,
+                hitboxSize,
+                SpriteEffects.None,
+                0f);
+        }
+
 
         static Texture2D _pixel;
         private Texture2D GetPixel(GraphicsDevice device)

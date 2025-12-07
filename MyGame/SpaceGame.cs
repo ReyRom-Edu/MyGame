@@ -138,6 +138,7 @@ namespace MyGame
             foreach(var e in _enemies)
             {
                 e.Draw(_spriteBatch);
+                e.DrawHitbox(_spriteBatch);
             }
 
             _hero.Draw(_spriteBatch);
