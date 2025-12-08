@@ -16,6 +16,7 @@ namespace MyGame
         private Texture2D _spaceMidTexture;
         private Texture2D _spaceNearTexture;
         private Texture2D _enemyTexture;
+        private SpriteFont _font;
 
         private Hero _hero;
         private Camera2D _camera;
@@ -26,6 +27,10 @@ namespace MyGame
         ParallaxLayer _layerNear;
 
         int screenW, screenH;
+
+        int score = 0;
+
+        bool isGameOver = false;
 
         public SpaceGame()
         {
@@ -47,6 +52,7 @@ namespace MyGame
             _spaceMidTexture = Content.Load<Texture2D>("space_mid");
             _spaceNearTexture = Content.Load<Texture2D>("space_near");
             _enemyTexture = Content.Load<Texture2D>("enemy");
+            _font = Content.Load<SpriteFont>("DefaultFont");
 
 
             _hero = new Hero(_heroTexture, new Vector2(screenW / 2, screenH / 2));
@@ -97,7 +103,20 @@ namespace MyGame
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
+            if (isGameOver)
+            {
+                if (Keyboard.GetState().IsKeyDown(Keys.Enter))
+                {
+                    isGameOver = false;
+                    score = 0;
+                    foreach (var e in _enemies)
+                    {
+                        e.Position = GetRandomPos();
+                    }
+                }
 
+                return;
+            }
 
             _hero.Update(gameTime, _camera);
 
@@ -107,7 +126,14 @@ namespace MyGame
 
                 if (_hero.Laser.IsActive && e.LaserHitsEnemy(_hero.Laser))
                 {
+                    score++;
                     e.Position = GetRandomPos();
+                }
+
+                float dist = Vector2.Distance(_hero.Center, e.Center);
+                if (dist < _hero.Radius) 
+                { 
+                    isGameOver = true;
                 }
             }
 
@@ -138,9 +164,17 @@ namespace MyGame
             foreach(var e in _enemies)
             {
                 e.Draw(_spriteBatch);
+                e.DrawHitbox(_spriteBatch);
             }
 
             _hero.Draw(_spriteBatch);
+            _hero.DrawHitbox(_spriteBatch);
+            _spriteBatch.DrawString(_font,$"Счет: {score}", _camera.Position + new Vector2(30,30), Color.White);
+
+            if (isGameOver)
+            {
+                _spriteBatch.DrawString(_font, $"ПОТРАЧЕНО", _camera.Position + new Vector2(screenW/2, screenH/2), Color.White);
+            }
 
             _spriteBatch.End();
 

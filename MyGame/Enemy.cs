@@ -23,35 +23,40 @@ namespace MyGame
         {
             float dt = (float)t.ElapsedGameTime.TotalSeconds;
 
-            Vector2 target = pos - this.Position;
+            Vector2 target = pos - this.Center;
 
-            target = Vector2.Lerp(target, this.Position, dt);
+            target = Vector2.Lerp(target, this.Center, dt);
 
             target.Normalize();
 
             Position += target * Speed * dt;
-
-            center = this.Position + new Vector2(texture.Width / 2, texture.Height / 2);
-            radius = texture.Width / 2;
+            UpdateHitbox();
         }
 
-        Vector2 center;
-        float radius;
+        private void UpdateHitbox()
+        {
+            Center = this.Position + new Vector2(texture.Width / 2, texture.Height / 2) * 0.1f;
+            Radius = texture.Width / 2 * 0.1f;
+        }
+
+        public Vector2 Center;
+        public float Radius;
 
         public bool LaserHitsEnemy(Laser laser)
         {
-            center = this.Position + new Vector2(texture.Width/2, texture.Height/2);
-            radius = texture.Width/2;
-
+            Vector2 laserStartToCenter = Center - laser.Start;
             Vector2 dir = laser.End - laser.Start;
-            float t = Vector2.Dot(center - laser.End, dir) / Vector2.Dot(dir,dir);
+
+            float length = dir.LengthSquared();
+
+            float t = Vector2.Dot(laserStartToCenter, dir) / length;
             t = MathHelper.Clamp(t, 0f, 1f);
 
             Vector2 closest = laser.Start + dir * t;
 
-            float dist = Vector2.Distance(closest, center);
+            float dist = Vector2.Distance(closest, Center);
 
-            return dist <= radius;
+            return dist <= Radius;
         }
 
         public void Draw(SpriteBatch sb)
@@ -62,19 +67,25 @@ namespace MyGame
                null,
                Color.White,
                0,
-               new Vector2(texture.Width / 2, texture.Height / 2),
+               Vector2.Zero,
                0.1f,
                SpriteEffects.None,
                0);
+        }
+
+        public void DrawHitbox(SpriteBatch sb)
+        {
+            Vector2 hitboxPos = Center - new Vector2(Radius, Radius);
+            Vector2 hitboxSize = new Vector2(Radius*2, Radius*2);
 
             sb.Draw(
                 GetPixel(sb.GraphicsDevice),
-                Position,
+                hitboxPos,
                 null,
-                Color.Aquamarine,
+                Color.Aquamarine * 0.5f,
                 0,
                 Vector2.Zero,
-                new Vector2(radius, radius),
+                hitboxSize,
                 SpriteEffects.None,
                 0);
         }

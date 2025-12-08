@@ -31,6 +31,15 @@ namespace MyGame
             Position = startPos;
         }
 
+        private void UpdateHitbox()
+        {
+            Radius = texture.Width / 2 * 0.2f;
+            Center = this.Position - new Vector2(texture.Width / 2, texture.Height / 2) * 0.2f + Vector2.One * Radius;
+        }
+
+        public Vector2 Center;
+        public float Radius;
+
         public void Update(GameTime time, Camera2D camera)
         {
             float dt = (float)time.ElapsedGameTime.TotalSeconds;
@@ -99,6 +108,7 @@ namespace MyGame
             Position += Velocity * dt;
 
             previousMouseState = mouse;
+            UpdateHitbox();
         }
 
         public void Draw(SpriteBatch sb)
@@ -118,6 +128,23 @@ namespace MyGame
                0.2f,
                SpriteEffects.None,
                0);
+        }
+
+        public void DrawHitbox(SpriteBatch sb)
+        {
+            Vector2 hitboxPos = Center - new Vector2(Radius, Radius);
+            Vector2 hitboxSize = new Vector2(Radius*2, Radius*2);
+
+            sb.Draw(
+                GetPixel(sb.GraphicsDevice),
+                hitboxPos,
+                null,
+                Color.Aquamarine * 0.5f,
+                0,
+                Vector2.Zero,
+                hitboxSize,
+                SpriteEffects.None,
+                0);
         }
 
         private void DrawLine(SpriteBatch sb, Vector2 start, Vector2 end, Color color, float width)
